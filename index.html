@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Identify the Angle</title>
+<style>
+  :root {
+    --bg: #0b1220;
+    --ink: #e5e7eb;
+    --panel: #0f172a;
+    --border: #1f2937;
+    --purple: #a78bfa;
+    --green: #22c55e;
+    --orange: #f59e0b;
+    --teal: #11a8a0;
+    --pink: #f472b6;
+    --blue: #3b82f6;
+    --yellow: #fbbf24;
+    --red: #ef4444;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    font-size: 24px;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 30px;
+  }
+
+  .greeting {
+    text-align: center;
+    font-size: 36px;
+    color: var(--teal);
+    margin-bottom: 30px;
+  }
+
+  .main-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 30px;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* SVG */
+  .svg-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0 30px 0;
+  }
+
+  .stage {
+    background: #080d16;
+    border-radius: 16px;
+  }
+
+  .shape-line {
+    stroke: var(--ink);
+    stroke-width: 3;
+    fill: none;
+  }
+
+  .vertex-label {
+    fill: var(--teal);
+    font-size: 32px;
+    font-weight: bold;
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  /* Angle arcs - clickable */
+  .angle-arc {
+    fill: rgba(167, 139, 250, 0.2);
+    stroke: var(--purple);
+    stroke-width: 2;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .angle-arc:hover {
+    fill: rgba(167, 139, 250, 0.5);
+    stroke-width: 4;
+  }
+
+  .angle-arc.correct {
+    fill: rgba(34, 197, 94, 0.5);
+    stroke: var(--green);
+    stroke-width: 5;
+    animation: pulse 1.2s ease-in-out 5;
+  }
+
+  .angle-arc.wrong {
+    fill: rgba(239, 68, 68, 0.5);
+    stroke: var(--red);
+    stroke-width: 4;
+  }
+
+  .angle-arc.disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Animated highlight */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Section header */
+  .section-header {
+    font-size: 28px;
+    color: var(--teal);
+    margin: 25px 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+  }
+
+  /* Question */
+  .question-box {
+    font-size: 28px;
+    text-align: center;
+    margin: 25px 0;
+    color: var(--orange);
+  }
+
+  .angle-to-find {
+    font-size: 48px;
+    text-align: center;
+    margin: 20px 0;
+    color: var(--purple);
+    direction: ltr;
+    font-weight: bold;
+  }
+
+  .instruction {
+    font-size: 22px;
+    text-align: center;
+    margin: 15px 0;
+    color: var(--ink);
+  }
+
+  /* Info box */
+  .info-box {
+    background: rgba(167, 139, 250, 0.1);
+    border: 2px solid var(--purple);
+    border-radius: 14px;
+    padding: 20px 28px;
+    margin-bottom: 25px;
+    font-size: 24px;
+  }
+
+  /* Celebration */
+  .celebration {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  .confetti {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    animation: fall 4s ease-out forwards;
+  }
+
+  @keyframes fall {
+    0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(1080deg); opacity: 0; }
+  }
+
+  /* Success message */
+  .success-msg {
+    text-align: center;
+    font-size: 38px;
+    color: var(--green);
+    margin: 25px 0;
+    display: none;
+  }
+
+  .success-msg.show {
+    display: block;
+    animation: pop 0.6s ease-out;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+
+  /* Feedback for wrong answer */
+  .feedback {
+    text-align: center;
+    font-size: 22px;
+    color: #ef4444;
+    margin: 20px 0;
+    display: none;
+    padding: 15px;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 10px;
+  }
+
+  .feedback.show {
+    display: block;
+  }
+
+  /* Explanation */
+  .explanation {
+    text-align: center;
+    font-size: 24px;
+    color: var(--teal);
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(34, 197, 94, 0.1);
+    border: 2px solid var(--green);
+    border-radius: 14px;
+    display: none;
+  }
+
+  .explanation.show {
+    display: block;
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Continue button */
+  .continue-btn {
+    display: none;
+    margin: 25px auto;
+    padding: 16px 45px;
+    font-size: 26px;
+    background: var(--purple);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+  }
+
+  .continue-btn.show {
+    display: block;
+  }
+
+  .continue-btn:hover {
+    background: #8b5cf6;
+  }
+
+  .next-btn {
+    display: none;
+    margin: 25px auto;
+    padding: 16px 45px;
+    font-size: 26px;
+    background: var(--teal);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+  }
+
+  .next-btn.show {
+    display: block;
+  }
+
+  .next-btn:hover {
+    background: #0e9488;
+  }
+
+  /* Final completion */
+  .final-success {
+    text-align: center;
+    padding: 40px;
+  }
+
+  .final-success h2 {
+    font-size: 42px;
+    color: var(--green);
+    margin-bottom: 20px;
+  }
+
+  .final-success p {
+    font-size: 26px;
+    margin: 15px 0;
+  }
+
+  /* Progress indicator */
+  .progress {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .progress-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .progress-dot.active {
+    background: var(--purple);
+  }
+
+  .progress-dot.done {
+    background: var(--green);
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 14px;
+    color: #6b7280;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="greeting">Hello! 😊</div>
+
+  <div class="main-card">
+
+    <!-- ==================== -->
+    <!-- Page 1: Introduction -->
+    <!-- ==================== -->
+    <div class="page active" id="intro">
+      <div class="section-header">Exercise: Identifying Angles in Triangles and Quadrilaterals</div>
+
+      <div class="info-box">
+        <div><strong>How do we name an angle?</strong></div>
+        <div style="margin-top: 15px;">
+          When we write <span style="direction: ltr; display: inline;">&#8736;ABC</span>, it means:
+        </div>
+        <div style="margin-top: 10px; margin-left: 20px;">
+          &#8226; The <strong>middle</strong> letter (B) is the <strong>vertex</strong> of the angle
+        </div>
+        <div style="margin-top: 5px; margin-left: 20px;">
+          &#8226; The first letter (A) is on one side of the angle
+        </div>
+        <div style="margin-top: 5px; margin-left: 20px;">
+          &#8226; The last letter (C) is on the other side of the angle
+        </div>
+        <div style="margin-top: 15px; color: var(--teal);">
+          In each question you will see a shape with several angles - click on the correct angle!
+        </div>
+      </div>
+
+      <button class="next-btn show" onclick="showPage('page1')" style="margin-top: 20px;">Let's start!</button>
+    </div>
+
+    <!-- ==================== -->
+    <!-- Page 2: Triangle ABC - Angle A -->
+    <!-- ==================== -->
+    <div class="page" id="page1">
+      <div class="section-header">Part A - Triangle</div>
+
+      <div class="progress">
+        <div class="progress-dot active"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+      </div>
+
+      <div class="svg-container">
+        <svg class="stage" width="550" height="420" viewBox="0 0 550 420">
+          <!--
+            Triangle ABC:
+            A (275, 60) - top
+            B (80, 350) - bottom left
+            C (470, 350) - bottom right
+          -->
+
+          <!-- Angle arcs - clickable areas -->
+          <!-- Angle A (at vertex A) -->
+          <path id="angle1-A" class="angle-arc"
+                d="M 275 60 L 230 130 A 80 80 0 0 1 320 130 Z"
+                onclick="checkAngle(1, 'BAC', this)"/>
+
+          <!-- Angle B (at vertex B) -->
+          <path id="angle1-B" class="angle-arc"
+                d="M 80 350 L 130 290 A 70 70 0 0 1 150 350 Z"
+                onclick="checkAngle(1, 'ABC', this)"/>
+
+          <!-- Angle C (at vertex C) -->
+          <path id="angle1-C" class="angle-arc"
+                d="M 470 350 L 400 350 A 70 70 0 0 1 420 290 Z"
+                onclick="checkAngle(1, 'BCA', this)"/>
+
+          <!-- Triangle sides -->
+          <line class="shape-line" x1="275" y1="60" x2="80" y2="350"/>
+          <line class="shape-line" x1="275" y1="60" x2="470" y2="350"/>
+          <line class="shape-line" x1="80" y1="350" x2="470" y2="350"/>
+
+          <!-- Labels -->
+          <text class="vertex-label" x="265" y="45">A</text>
+          <text class="vertex-label" x="45" y="370">B</text>
+          <text class="vertex-label" x="480" y="370">C</text>
+        </svg>
+      </div>
+
+      <div class="question-box">Click on the angle:</div>
+      <div class="angle-to-find">&#8736;BAC</div>
+      <div class="instruction">The vertex is A (the middle letter)</div>
+
+      <div class="feedback" id="feedback1">
+        Pay attention: the middle letter is <strong>A</strong>!<br>
+        Look for the angle at <strong>vertex A</strong> (at the top)
+      </div>
+
+      <div class="success-msg" id="success1">🎉 Correct! 🎉</div>
+
+      <div class="explanation" id="explanation1">
+        <strong>&#8736;BAC</strong> is the angle at vertex <strong>A</strong>.<br>
+        Its sides are AB and AC.
+      </div>
+
+      <button class="continue-btn" id="continue1" onclick="showPage('page2')">Next part</button>
+    </div>
+
+    <!-- ==================== -->
+    <!-- Page 3: Triangle ABC - Angle B -->
+    <!-- ==================== -->
+    <div class="page" id="page2">
+      <div class="section-header">Part B - Triangle</div>
+
+      <div class="progress">
+        <div class="progress-dot done"></div>
+        <div class="progress-dot active"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+      </div>
+
+      <div class="svg-container">
+        <svg class="stage" width="550" height="420" viewBox="0 0 550 420">
+          <path id="angle2-A" class="angle-arc"
+                d="M 275 60 L 230 130 A 80 80 0 0 1 320 130 Z"
+                onclick="checkAngle(2, 'BAC', this)"/>
+
+          <path id="angle2-B" class="angle-arc"
+                d="M 80 350 L 130 290 A 70 70 0 0 1 150 350 Z"
+                onclick="checkAngle(2, 'ABC', this)"/>
+
+          <path id="angle2-C" class="angle-arc"
+                d="M 470 350 L 400 350 A 70 70 0 0 1 420 290 Z"
+                onclick="checkAngle(2, 'BCA', this)"/>
+
+          <line class="shape-line" x1="275" y1="60" x2="80" y2="350"/>
+          <line class="shape-line" x1="275" y1="60" x2="470" y2="350"/>
+          <line class="shape-line" x1="80" y1="350" x2="470" y2="350"/>
+
+          <text class="vertex-label" x="265" y="45">A</text>
+          <text class="vertex-label" x="45" y="370">B</text>
+          <text class="vertex-label" x="480" y="370">C</text>
+        </svg>
+      </div>
+
+      <div class="question-box">Click on the angle:</div>
+      <div class="angle-to-find">&#8736;CBA</div>
+      <div class="instruction">The vertex is B (the middle letter)</div>
+
+      <div class="feedback" id="feedback2">
+        Pay attention: &#8736;CBA is the same as &#8736;ABC!<br>
+        The vertex is <strong>B</strong> (bottom left)
+      </div>
+
+      <div class="success-msg" id="success2">🎉 Excellent! 🎉</div>
+
+      <div class="explanation" id="explanation2">
+        <strong>&#8736;CBA</strong> (= &#8736;ABC) is the angle at vertex <strong>B</strong>.<br>
+        You can write it in either direction - what matters is that the vertex is in the middle!
+      </div>
+
+      <button class="continue-btn" id="continue2" onclick="showPage('page3')">Next part</button>
+    </div>
+
+    <!-- ==================== -->
+    <!-- Page 4: Quadrilateral ABCD - Angle A -->
+    <!-- ==================== -->
+    <div class="page" id="page3">
+      <div class="section-header">Part C - Quadrilateral</div>
+
+      <div class="progress">
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot active"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+      </div>
+
+      <div class="svg-container">
+        <svg class="stage" width="550" height="420" viewBox="0 0 550 420">
+          <!--
+            Quadrilateral ABCD (not a rectangle - trapezoid):
+            A (100, 100) - top left
+            B (450, 80) - top right
+            C (480, 340) - bottom right
+            D (70, 360) - bottom left
+          -->
+
+          <!-- Angle A -->
+          <path id="angle3-A" class="angle-arc"
+                d="M 100 100 L 100 160 A 60 60 0 0 1 160 100 Z"
+                onclick="checkAngle(3, 'DAB', this)"/>
+
+          <!-- Angle B -->
+          <path id="angle3-B" class="angle-arc"
+                d="M 450 80 L 390 80 A 60 60 0 0 1 440 140 Z"
+                onclick="checkAngle(3, 'ABC', this)"/>
+
+          <!-- Angle C -->
+          <path id="angle3-C" class="angle-arc"
+                d="M 480 340 L 470 280 A 60 60 0 0 1 420 340 Z"
+                onclick="checkAngle(3, 'BCD', this)"/>
+
+          <!-- Angle D -->
+          <path id="angle3-D" class="angle-arc"
+                d="M 70 360 L 130 360 A 60 60 0 0 1 80 300 Z"
+                onclick="checkAngle(3, 'CDA', this)"/>
+
+          <!-- Quadrilateral sides -->
+          <line class="shape-line" x1="100" y1="100" x2="450" y2="80"/>
+          <line class="shape-line" x1="450" y1="80" x2="480" y2="340"/>
+          <line class="shape-line" x1="480" y1="340" x2="70" y2="360"/>
+          <line class="shape-line" x1="70" y1="360" x2="100" y2="100"/>
+
+          <!-- Labels -->
+          <text class="vertex-label" x="75" y="90">A</text>
+          <text class="vertex-label" x="460" y="70">B</text>
+          <text class="vertex-label" x="490" y="355">C</text>
+          <text class="vertex-label" x="40" y="380">D</text>
+        </svg>
+      </div>
+
+      <div class="question-box">Click on the angle:</div>
+      <div class="angle-to-find">&#8736;DAB</div>
+      <div class="instruction">The vertex is A (the middle letter)</div>
+
+      <div class="feedback" id="feedback3">
+        Pay attention: the vertex is <strong>A</strong>!<br>
+        This is the angle at <strong>the top left corner</strong>
+      </div>
+
+      <div class="success-msg" id="success3">🎉 Great! 🎉</div>
+
+      <div class="explanation" id="explanation3">
+        <strong>&#8736;DAB</strong> is the angle at vertex <strong>A</strong>.<br>
+        Its sides are AD and AB.
+      </div>
+
+      <button class="continue-btn" id="continue3" onclick="showPage('page4')">Next part</button>
+    </div>
+
+    <!-- ==================== -->
+    <!-- Page 5: Quadrilateral ABCD - Angle C -->
+    <!-- ==================== -->
+    <div class="page" id="page4">
+      <div class="section-header">Part D - Quadrilateral</div>
+
+      <div class="progress">
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot active"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+      </div>
+
+      <div class="svg-container">
+        <svg class="stage" width="550" height="420" viewBox="0 0 550 420">
+          <path id="angle4-A" class="angle-arc"
+                d="M 100 100 L 100 160 A 60 60 0 0 1 160 100 Z"
+                onclick="checkAngle(4, 'DAB', this)"/>
+
+          <path id="angle4-B" class="angle-arc"
+                d="M 450 80 L 390 80 A 60 60 0 0 1 440 140 Z"
+                onclick="checkAngle(4, 'ABC', this)"/>
+
+          <path id="angle4-C" class="angle-arc"
+                d="M 480 340 L 470 280 A 60 60 0 0 1 420 340 Z"
+                onclick="checkAngle(4, 'BCD', this)"/>
+
+          <path id="angle4-D" class="angle-arc"
+                d="M 70 360 L 130 360 A 60 60 0 0 1 80 300 Z"
+                onclick="checkAngle(4, 'CDA', this)"/>
+
+          <line class="shape-line" x1="100" y1="100" x2="450" y2="80"/>
+          <line class="shape-line" x1="450" y1="80" x2="480" y2="340"/>
+          <line class="shape-line" x1="480" y1="340" x2="70" y2="360"/>
+          <line class="shape-line" x1="70" y1="360" x2="100" y2="100"/>
+
+          <text class="vertex-label" x="75" y="90">A</text>
+          <text class="vertex-label" x="460" y="70">B</text>
+          <text class="vertex-label" x="490" y="355">C</text>
+          <text class="vertex-label" x="40" y="380">D</text>
+        </svg>
+      </div>
+
+      <div class="question-box">Click on the angle:</div>
+      <div class="angle-to-find">&#8736;DCB</div>
+      <div class="instruction">The vertex is C (the middle letter)</div>
+
+      <div class="feedback" id="feedback4">
+        Pay attention: &#8736;DCB is the same as &#8736;BCD!<br>
+        The vertex is <strong>C</strong> (at the bottom right corner)
+      </div>
+
+      <div class="success-msg" id="success4">🎉 Well done! 🎉</div>
+
+      <div class="explanation" id="explanation4">
+        <strong>&#8736;DCB</strong> (= &#8736;BCD) is the angle at vertex <strong>C</strong>.<br>
+        Its sides are CD and CB.
+      </div>
+
+      <button class="continue-btn" id="continue4" onclick="showPage('page5')">Next part</button>
+    </div>
+
+    <!-- ==================== -->
+    <!-- Page 6: Triangle with interior line - more angles -->
+    <!-- ==================== -->
+    <div class="page" id="page5">
+      <div class="section-header">Part E - Triangle with Interior Line</div>
+
+      <div class="progress">
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot active"></div>
+        <div class="progress-dot"></div>
+      </div>
+
+      <div class="svg-container">
+        <svg class="stage" width="550" height="420" viewBox="0 0 550 420">
+          <!--
+            Triangle ABC with point D on BC:
+            A (275, 60) - top
+            B (80, 350) - bottom left
+            C (470, 350) - bottom right
+            D (275, 350) - on BC (midpoint)
+            Line AD divides the triangle
+          -->
+
+          <!-- Angle BAD (left part of angle A) -->
+          <path id="angle5-BAD" class="angle-arc"
+                d="M 275 60 L 230 130 A 80 80 0 0 1 275 140 Z"
+                onclick="checkAngle(5, 'BAD', this)"/>
+
+          <!-- Angle DAC (right part of angle A) -->
+          <path id="angle5-DAC" class="angle-arc"
+                d="M 275 60 L 275 140 A 80 80 0 0 1 320 130 Z"
+                onclick="checkAngle(5, 'DAC', this)"/>
+
+          <!-- Angle ABD (= angle B) -->
+          <path id="angle5-ABD" class="angle-arc"
+                d="M 80 350 L 130 290 A 70 70 0 0 1 150 350 Z"
+                onclick="checkAngle(5, 'ABD', this)"/>
+
+          <!-- Angle ADB (at vertex D, left side) -->
+          <path id="angle5-ADB" class="angle-arc"
+                d="M 275 350 L 225 350 A 50 50 0 0 1 275 300 Z"
+                onclick="checkAngle(5, 'ADB', this)"/>
+
+          <!-- Angle ADC (at vertex D, right side) -->
+          <path id="angle5-ADC" class="angle-arc"
+                d="M 275 350 L 275 300 A 50 50 0 0 1 325 350 Z"
+                onclick="checkAngle(5, 'ADC', this)"/>
+
+          <!-- Angle DCA (= angle C) -->
+          <path id="angle5-DCA" class="angle-arc"
+                d="M 470 350 L 400 350 A 70 70 0 0 1 420 290 Z"
+                onclick="checkAngle(5, 'DCA', this)"/>
+
+          <!-- Triangle sides -->
+          <line class="shape-line" x1="275" y1="60" x2="80" y2="350"/>
+          <line class="shape-line" x1="275" y1="60" x2="470" y2="350"/>
+          <line class="shape-line" x1="80" y1="350" x2="470" y2="350"/>
+          <!-- Line AD -->
+          <line class="shape-line" x1="275" y1="60" x2="275" y2="350" stroke-dasharray="8,4"/>
+
+          <!-- Labels -->
+          <text class="vertex-label" x="265" y="45">A</text>
+          <text class="vertex-label" x="45" y="370">B</text>
+          <text class="vertex-label" x="480" y="370">C</text>
+          <text class="vertex-label" x="280" y="390">D</text>
+        </svg>
+      </div>
+
+      <div class="question-box">Click on the angle:</div>
+      <div class="angle-to-find">&#8736;ADB</div>
+      <div class="instruction">The vertex is D (the middle letter)</div>
+
+      <div class="feedback" id="feedback5">
+        Pay attention: the vertex is <strong>D</strong>!<br>
+        There are two angles at vertex D - this one is between AD and DB (left side)
+      </div>
+
+      <div class="success-msg" id="success5">🎉 Excellent! 🎉</div>
+
+      <div class="explanation" id="explanation5">
+        <strong>&#8736;ADB</strong> is the angle at vertex <strong>D</strong>,<br>
+        between sides DA and DB (the left angle at point D).
+      </div>
+
+      <button class="continue-btn" id="continue5" onclick="showPage('page6')">Next part</button>
+    </div>
+
+    <!-- ==================== -->
+    <!-- Page 7: Triangle with interior line - another angle -->
+    <!-- ==================== -->
+    <div class="page" id="page6">
+      <div class="section-header">Part F - Triangle with Interior Line</div>
+
+      <div class="progress">
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot active"></div>
+      </div>
+
+      <div class="svg-container">
+        <svg class="stage" width="550" height="420" viewBox="0 0 550 420">
+          <path id="angle6-BAD" class="angle-arc"
+                d="M 275 60 L 230 130 A 80 80 0 0 1 275 140 Z"
+                onclick="checkAngle(6, 'BAD', this)"/>
+
+          <path id="angle6-DAC" class="angle-arc"
+                d="M 275 60 L 275 140 A 80 80 0 0 1 320 130 Z"
+                onclick="checkAngle(6, 'DAC', this)"/>
+
+          <path id="angle6-ABD" class="angle-arc"
+                d="M 80 350 L 130 290 A 70 70 0 0 1 150 350 Z"
+                onclick="checkAngle(6, 'ABD', this)"/>
+
+          <path id="angle6-ADB" class="angle-arc"
+                d="M 275 350 L 225 350 A 50 50 0 0 1 275 300 Z"
+                onclick="checkAngle(6, 'ADB', this)"/>
+
+          <path id="angle6-ADC" class="angle-arc"
+                d="M 275 350 L 275 300 A 50 50 0 0 1 325 350 Z"
+                onclick="checkAngle(6, 'ADC', this)"/>
+
+          <path id="angle6-DCA" class="angle-arc"
+                d="M 470 350 L 400 350 A 70 70 0 0 1 420 290 Z"
+                onclick="checkAngle(6, 'DCA', this)"/>
+
+          <line class="shape-line" x1="275" y1="60" x2="80" y2="350"/>
+          <line class="shape-line" x1="275" y1="60" x2="470" y2="350"/>
+          <line class="shape-line" x1="80" y1="350" x2="470" y2="350"/>
+          <line class="shape-line" x1="275" y1="60" x2="275" y2="350" stroke-dasharray="8,4"/>
+
+          <text class="vertex-label" x="265" y="45">A</text>
+          <text class="vertex-label" x="45" y="370">B</text>
+          <text class="vertex-label" x="480" y="370">C</text>
+          <text class="vertex-label" x="280" y="390">D</text>
+        </svg>
+      </div>
+
+      <div class="question-box">Click on the angle:</div>
+      <div class="angle-to-find">&#8736;CAD</div>
+      <div class="instruction">The vertex is A (the middle letter)</div>
+
+      <div class="feedback" id="feedback6">
+        Pay attention: &#8736;CAD is the same as &#8736;DAC!<br>
+        The vertex is <strong>A</strong>, and this is the <strong>right-side</strong> angle at vertex A (between AC and AD)
+      </div>
+
+      <div class="success-msg" id="success6">🎉 Well done! 🎉</div>
+
+      <div class="explanation" id="explanation6">
+        <strong>&#8736;CAD</strong> (= &#8736;DAC) is the angle at vertex <strong>A</strong>,<br>
+        between sides AC and AD (the right part of the top angle).
+      </div>
+
+      <button class="continue-btn" id="continue6" onclick="showPage('final')">Finish</button>
+    </div>
+
+    <!-- ==================== -->
+    <!-- Final page -->
+    <!-- ==================== -->
+    <div class="page" id="final">
+      <div class="final-success">
+        <h2>🌟 Well Done! 🌟</h2>
+        <p>You successfully identified all the angles!</p>
+
+        <div style="margin-top: 30px; text-align: left; max-width: 550px; margin-left: auto; margin-right: auto;">
+          <p style="color: var(--teal); font-size: 24px;"><strong>What we learned:</strong></p>
+          <p style="font-size: 22px;">&#8226; The <strong>middle</strong> letter in the angle notation is always the <strong>vertex</strong></p>
+          <p style="font-size: 22px;">&#8226; The side letters are on the two sides of the angle</p>
+          <p style="font-size: 22px; direction: ltr; text-align: center;">&#8736;ABC = &#8736;CBA</p>
+          <p style="font-size: 20px; color: var(--ink);">(You can write it in either direction - what matters is that the vertex is in the middle!)</p>
+          <p style="font-size: 22px; margin-top: 20px;">&#8226; When there is an interior line (like AD), additional angles are formed!</p>
+        </div>
+
+        <button class="next-btn show" onclick="location.reload()" style="margin-top: 30px;">Start over</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Confetti container -->
+<div class="celebration" id="celebration"></div>
+
+<div class="footer">&copy; Developed by Shir Sivroni | All rights reserved</div>
+
+<script>
+let answered = { 1: false, 2: false, 3: false, 4: false, 5: false, 6: false };
+
+// Correct answers for each part
+const correctAnswers = {
+  1: 'BAC',  // Part A - angle BAC (angle A in triangle)
+  2: 'ABC',  // Part B - angle CBA = angle ABC (angle B in triangle)
+  3: 'DAB',  // Part C - angle DAB (angle A in quadrilateral)
+  4: 'BCD',  // Part D - angle DCB = angle BCD (angle C in quadrilateral)
+  5: 'ADB',  // Part E - angle ADB (angle D left)
+  6: 'DAC'   // Part F - angle CAD = angle DAC (right part of angle A)
+};
+
+function checkAngle(section, angleName, element) {
+  if (answered[section]) return;
+
+  const isCorrect = (angleName === correctAnswers[section]);
+
+  if (isCorrect) {
+    answered[section] = true;
+    element.classList.add('correct');
+
+    // Disable all angle arcs in this page
+    document.querySelectorAll('#page' + section + ' .angle-arc').forEach(arc => {
+      arc.classList.add('disabled');
+    });
+
+    document.getElementById('feedback' + section).classList.remove('show');
+    document.getElementById('success' + section).classList.add('show');
+
+    createConfetti();
+
+    setTimeout(() => {
+      document.getElementById('explanation' + section).classList.add('show');
+    }, 1500);
+
+    setTimeout(() => {
+      document.getElementById('continue' + section).classList.add('show');
+    }, 2500);
+
+  } else {
+    element.classList.add('wrong');
+    document.getElementById('feedback' + section).classList.add('show');
+    setTimeout(() => element.classList.remove('wrong'), 1500);
+  }
+}
+
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+
+  if (pageId === 'final') {
+    createConfetti();
+    setTimeout(createConfetti, 1000);
+    setTimeout(createConfetti, 2000);
+  }
+}
+
+function createConfetti() {
+  const celebration = document.getElementById('celebration');
+  const colors = ['#a78bfa', '#22c55e', '#f59e0b', '#3b82f6', '#ec4899', '#f472b6', '#fbbf24'];
+
+  for (let i = 0; i < 80; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.left = Math.random() * 100 + '%';
+    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+    confetti.style.animationDelay = Math.random() * 1 + 's';
+    celebration.appendChild(confetti);
+  }
+
+  setTimeout(() => { celebration.innerHTML = ''; }, 5000);
+}
+</script>
+
+</body>
+</html>
